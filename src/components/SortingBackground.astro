@@ -1,0 +1,613 @@
+<canvas class="sorting-background" aria-hidden="true"></canvas>
+
+<style>
+	.sorting-background {
+		position: fixed;
+		inset: 0;
+		z-index: 0;
+		width: 100%;
+		height: 100%;
+		background-color: #080b16;
+		background-image:
+			radial-gradient(circle at 12% 18%, rgb(44 211 255 / 18%), transparent 30%),
+			radial-gradient(circle at 86% 76%, rgb(181 72 255 / 16%), transparent 33%),
+			radial-gradient(circle at 54% 45%, rgb(51 99 255 / 10%), transparent 42%);
+		background-size: 140% 140%;
+		pointer-events: none;
+	}
+</style>
+
+<script>
+	const canvas = document.querySelector<HTMLCanvasElement>('.sorting-background');
+
+	if (canvas) {
+		const context = canvas.getContext('2d', { desynchronized: true });
+		const debug = (event: string, details: Record<string, unknown> = {}) => {
+			console.debug(`[SortingBackground] ${event}`, {
+				elapsedMs: Math.round(performance.now()),
+				...details,
+			});
+		};
+		const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+		let values: number[] = [];
+		let edgeSurplus: number[] = [];
+		let activeMove: {
+			source: number;
+			destination: number;
+			sourceHeightBefore: number;
+			destinationHeightAfter: number;
+		} | null = null;
+		let columnCount = 0;
+		let rowCount = 0;
+		let cellWidth = 16;
+		let cellHeight = 16;
+		let pixelRatio = 1;
+		let topClearance = 76;
+		let animationFrame = 0;
+		let animationRun = 0;
+		let movementCount = 0;
+		let resizeTimer = 0;
+		let resizePending = false;
+		let initialDisorder = 1;
+		let colorPhase = 0;
+		// A visible page starts active. Some embedded previews report
+		// document.hasFocus() as false permanently, which would otherwise freeze
+		// the initial empty frame before the cube fill can begin.
+		let pageIsActive = document.visibilityState === 'visible';
+		let activeWaiters: Array<() => void> = [];
+
+		debug('script initialized', {
+			canvasFound: true,
+			contextCreated: Boolean(context),
+			visibilityState: document.visibilityState,
+			initiallyActive: pageIsActive,
+			devicePixelRatio: window.devicePixelRatio,
+		});
+		if (!context) console.error('[SortingBackground] Unable to create the 2D canvas context.');
+
+		const wait = (milliseconds: number) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+		const waitUntilActive = () => {
+			if (pageIsActive) return Promise.resolve();
+			return new Promise<void>((resolve) => activeWaiters.push(resolve));
+		};
+		const pauseAwareWait = async (milliseconds: number) => {
+			await wait(milliseconds);
+			await waitUntilActive();
+		};
+		const createRandom = () => {
+			const entropy = new Uint32Array(2);
+			crypto.getRandomValues(entropy);
+			let state = entropy[0] ^ entropy[1] ^ Date.now() ^ Math.floor(performance.now() * 1000);
+
+			return () => {
+				state += 0x6d2b79f5;
+				let value = state;
+				value = Math.imul(value ^ (value >>> 15), value | 1);
+				value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+				return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+			};
+		};
+		const random = createRandom();
+		const calculateDisorder = (distribution: number[]) => distribution.reduce(
+			(total, value, index) => total + Math.abs(value - (index + 1)),
+			0,
+		);
+		const getCompletion = () => Math.min(1, 1 - calculateDisorder(values) / initialDisorder);
+		const gradientColor = (offset: number, completion: number) => {
+			const channel = (phase: number) => Math.round(
+				(150 + 105 * Math.sin(colorPhase + offset * Math.PI * 2 + phase)) * (1 - completion) + 255 * completion,
+			);
+			return `rgb(${channel(0)}, ${channel((Math.PI * 2) / 3)}, ${channel((Math.PI * 4) / 3)})`;
+		};
+		const getGraphBounds = (width: number, height: number) => {
+			const pageInset = Math.min(32, Math.max(16, width * 0.025));
+			const plotTop = Math.max(pageInset, topClearance);
+			const axisLeft = 46;
+			const axisRight = 46;
+			const axisBottom = 34;
+			const plotGap = 14;
+			const startX = pageInset + axisLeft;
+			const baseline = height - pageInset - axisBottom;
+			const availableWidth = width - pageInset * 2 - axisLeft - axisRight;
+			const availableHeight = height - plotTop - pageInset - axisBottom;
+			return {
+				pageInset,
+				plotTop,
+				startX,
+				baseline,
+				availableWidth,
+				availableHeight,
+				plotEndX: startX + availableWidth - plotGap,
+				cubeBaseline: baseline - plotGap,
+				plotWidth: availableWidth - plotGap,
+				plotHeight: availableHeight - plotGap,
+			};
+		};
+
+		function draw(fillProgress = 1) {
+			if (!context) return;
+
+			const width = canvas.width / pixelRatio;
+			const height = canvas.height / pixelRatio;
+			context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+			context.clearRect(0, 0, width, height);
+
+			const { plotTop, startX, baseline, availableWidth, availableHeight, plotEndX, cubeBaseline } = getGraphBounds(width, height);
+			const completion = getCompletion();
+			colorPhase += 0.12 * (1 - completion);
+			context.save();
+			context.strokeStyle = 'rgb(225 237 255 / 46%)';
+			context.lineWidth = 1.75;
+			context.font = '10px system-ui, sans-serif';
+			const xMetric = `${columnCount} POSITIONS`;
+			const yMetric = `MAX STACK: ${rowCount}`;
+			const labelGap = context.measureText(xMetric).width + 20;
+			const verticalGap = context.measureText(yMetric).width + 20;
+			const labelCenter = startX + availableWidth / 2;
+			const verticalCenter = plotTop + availableHeight / 2;
+			const tickLength = 8;
+			const cornerGap = 12;
+			const verticalEnd = cubeBaseline;
+			context.beginPath();
+			const endX = startX + availableWidth;
+			context.moveTo(endX, plotTop);
+			context.lineTo(endX, verticalCenter - verticalGap / 2);
+			context.moveTo(endX, plotTop);
+			context.lineTo(endX - tickLength, plotTop);
+			context.moveTo(endX, verticalCenter + verticalGap / 2);
+			context.lineTo(endX, verticalEnd);
+			context.moveTo(endX, verticalEnd);
+			context.lineTo(endX - tickLength, verticalEnd);
+			context.stroke();
+
+			context.beginPath();
+			context.moveTo(startX, baseline);
+			context.lineTo(labelCenter - labelGap / 2, baseline);
+			context.moveTo(labelCenter + labelGap / 2, baseline);
+			context.lineTo(endX - cornerGap, baseline);
+			context.moveTo(startX, baseline);
+			context.lineTo(startX, baseline - tickLength);
+			context.moveTo(endX - cornerGap, baseline);
+			context.lineTo(endX - cornerGap, baseline - tickLength);
+			context.stroke();
+			context.fillStyle = 'rgb(232 241 255 / 78%)';
+			context.letterSpacing = '0.08em';
+			context.textAlign = 'center';
+			context.textBaseline = 'middle';
+			context.fillText(xMetric, labelCenter, baseline);
+			context.save();
+			context.translate(endX, verticalCenter);
+			context.rotate(-Math.PI / 2);
+			context.fillText(yMetric, 0, 0);
+			context.restore();
+			context.restore();
+
+			const gradient = context.createLinearGradient(startX, plotTop, plotEndX, cubeBaseline);
+			gradient.addColorStop(0, gradientColor(0, completion));
+			gradient.addColorStop(0.5, gradientColor(0.5, completion));
+			gradient.addColorStop(1, gradientColor(1, completion));
+			context.fillStyle = gradient;
+
+			if (activeMove && fillProgress >= 1) {
+				context.save();
+				context.fillStyle = 'rgb(255 255 255 / 7%)';
+				context.fillRect(
+					startX + activeMove.source * cellWidth + 1,
+					plotTop,
+					Math.max(1, cellWidth - 2),
+					cubeBaseline - plotTop,
+				);
+				context.fillStyle = 'rgb(85 215 255 / 11%)';
+				context.fillRect(
+					startX + activeMove.destination * cellWidth + 1,
+					plotTop,
+					Math.max(1, cellWidth - 2),
+					cubeBaseline - plotTop,
+				);
+				context.restore();
+			}
+
+			const cubes = new Path2D();
+			values.forEach((value, column) => {
+				// Drawing is clamped as a final safety net; the logical transfer
+				// rules below also prevent a stack from reaching this boundary.
+				const visibleBlocks = Math.min(rowCount, Math.round(value * fillProgress));
+				for (let row = 0; row < visibleBlocks; row += 1) {
+					const x = startX + column * cellWidth + 1;
+					const y = cubeBaseline - (row + 1) * cellHeight + 1;
+					cubes.rect(x, y, Math.max(1, cellWidth - 2), Math.max(1, cellHeight - 2));
+				}
+			});
+			context.fill(cubes);
+
+			if (activeMove && fillProgress >= 1) {
+				const cubeWidth = Math.max(1, cellWidth - 2);
+				const cubeHeight = Math.max(1, cellHeight - 2);
+				const sourceX = startX + activeMove.source * cellWidth + 1;
+				const sourceY = cubeBaseline - activeMove.sourceHeightBefore * cellHeight + 1;
+				const destinationX = startX + activeMove.destination * cellWidth + 1;
+				const destinationY = cubeBaseline - activeMove.destinationHeightAfter * cellHeight + 1;
+
+				context.save();
+				context.lineWidth = 2;
+				context.setLineDash([3, 2]);
+				context.strokeStyle = 'rgb(255 135 205 / 92%)';
+				context.shadowColor = 'rgb(255 105 190 / 85%)';
+				context.shadowBlur = 10;
+				context.strokeRect(sourceX, sourceY, cubeWidth, cubeHeight);
+
+				context.setLineDash([]);
+				context.strokeStyle = '#ffffff';
+				context.shadowColor = 'rgb(85 215 255 / 95%)';
+				context.shadowBlur = 14;
+				context.strokeRect(destinationX, destinationY, cubeWidth, cubeHeight);
+				context.restore();
+			}
+		}
+
+		function createRandomDistribution() {
+			const distribution = Array.from({ length: columnCount }, (_, index) => index + 1);
+			const transferCount = columnCount * (3 + Math.floor(random() * 5));
+
+			for (let transfer = 0; transfer < transferCount; transfer += 1) {
+				const sources = distribution
+					.map((value, index) => ({ value, index }))
+					.filter(({ value, index }) => index > 0 && value > 0);
+				if (sources.length === 0) break;
+
+				const source = sources[Math.floor(random() * sources.length)].index;
+				const destination = Math.floor(random() * source);
+				if (distribution[destination] < rowCount) {
+					distribution[source] -= 1;
+					distribution[destination] += 1;
+				}
+			}
+
+			return distribution;
+		}
+
+		function rebuildEdgeSurplus() {
+			let currentPrefix = 0;
+			let targetPrefix = 0;
+			edgeSurplus = values.slice(0, -1).map((value, edge) => {
+				currentPrefix += value;
+				targetPrefix += edge + 1;
+				return currentPrefix - targetPrefix;
+			});
+		}
+
+		const sortingComplete = () => edgeSurplus.every((surplus) => surplus === 0);
+		const moveCube = async (edge: number, run: number) => {
+			const maximumStackHeight = rowCount;
+			if (
+				run !== animationRun
+				|| edge < 0
+				|| edge >= values.length - 1
+				|| edgeSurplus[edge] <= 0
+				|| values[edge] <= 0
+				|| values[edge + 1] + 1 > maximumStackHeight
+			) return false;
+
+			await waitUntilActive();
+			if (run !== animationRun) return false;
+
+			const sourceHeightBefore = values[edge];
+			values[edge] -= 1;
+			values[edge + 1] += 1;
+			edgeSurplus[edge] -= 1;
+			movementCount += 1;
+			canvas.dataset.sortMoves = String(movementCount);
+			if (movementCount === 1 || movementCount % 50 === 0) {
+				debug('cube transfer milestone', {
+					run,
+					movementCount,
+					source: edge,
+					destination: edge + 1,
+					remainingTransfers: edgeSurplus.reduce((total, surplus) => total + Math.max(0, surplus), 0),
+				});
+			}
+			activeMove = {
+				source: edge,
+				destination: edge + 1,
+				sourceHeightBefore,
+				destinationHeightAfter: values[edge + 1],
+			};
+			// One cube mutation always produces exactly one canvas frame.
+			draw();
+			await pauseAwareWait(22);
+			return true;
+		};
+		const moveAcrossOrder = async (
+			order: number[],
+			run: number,
+			condition: (edge: number) => boolean = () => true,
+		) => {
+			let moved = false;
+			for (const edge of order) {
+				if (run !== animationRun) return moved;
+				if (!condition(edge)) continue;
+				if (await moveCube(edge, run)) moved = true;
+			}
+			return moved;
+		};
+		const ensureProgress = async (run: number) => {
+			debug('scheduled traversal found no move; checking blocked edges', {
+				run,
+				remainingTransfers: edgeSurplus.reduce((total, surplus) => total + Math.max(0, surplus), 0),
+			});
+			const reverseEdges = Array.from({ length: values.length - 1 }, (_, index) => values.length - 2 - index);
+			for (const edge of reverseEdges) {
+				if (await moveCube(edge, run)) {
+					debug('fallback edge restored progress', { run, edge });
+					return true;
+				}
+			}
+			console.error('[SortingBackground] No legal transfer exists while sorting is incomplete.', {
+				run,
+				values: [...values],
+				edgeSurplus: [...edgeSurplus],
+				rowCount,
+				columnCount,
+			});
+			return false;
+		};
+
+		async function legacyBubbleSort(run: number) {
+			const edges = Array.from({ length: values.length - 1 }, (_, index) => index);
+			while (!sortingComplete() && run === animationRun) {
+				const moved = await moveAcrossOrder(
+					edges,
+					run,
+					(edge) => values[edge] >= values[edge + 1],
+				);
+				if (!moved && !await ensureProgress(run)) return;
+			}
+		}
+
+		async function cocktailShakerSort(run: number) {
+			const forward = Array.from({ length: values.length - 1 }, (_, index) => index);
+			const backward = [...forward].reverse();
+			while (!sortingComplete() && run === animationRun) {
+				const movedForward = await moveAcrossOrder(forward, run);
+				const movedBackward = await moveAcrossOrder(backward, run);
+				if (!movedForward && !movedBackward && !await ensureProgress(run)) return;
+			}
+		}
+
+		async function oddEvenSort(run: number) {
+			while (!sortingComplete() && run === animationRun) {
+				let moved = false;
+				for (const phase of [0, 1]) {
+					const edges = Array.from(
+						{ length: Math.ceil((values.length - 1 - phase) / 2) },
+						(_, index) => phase + index * 2,
+					);
+					if (await moveAcrossOrder(edges, run)) moved = true;
+				}
+				if (!moved && !await ensureProgress(run)) return;
+			}
+		}
+
+		async function gnomeSort(run: number) {
+			let cursor = 0;
+			let idleChecks = 0;
+			while (!sortingComplete() && run === animationRun) {
+				if (await moveCube(cursor, run)) {
+					cursor = Math.max(0, cursor - 1);
+					idleChecks = 0;
+				} else {
+					cursor += 1;
+					idleChecks += 1;
+					if (cursor >= values.length - 1) cursor = 0;
+				}
+
+				if (idleChecks > values.length * 2) {
+					if (!await ensureProgress(run)) return;
+					idleChecks = 0;
+				}
+			}
+		}
+
+		async function combSort(run: number) {
+			let gap = values.length;
+			while (!sortingComplete() && run === animationRun) {
+				gap = Math.max(1, Math.floor(gap / 1.3));
+				const edges: number[] = [];
+				for (let offset = 0; offset < gap; offset += 1) {
+					for (let edge = offset; edge < values.length - 1; edge += gap) edges.push(edge);
+				}
+				const moved = await moveAcrossOrder(edges, run);
+				if (!moved && !await ensureProgress(run)) return;
+			}
+		}
+
+		async function bitonicSort(run: number) {
+			const networkSize = 2 ** Math.ceil(Math.log2(values.length));
+			while (!sortingComplete() && run === animationRun) {
+				let moved = false;
+				for (let width = 2; width <= networkSize; width *= 2) {
+					for (let start = 0; start < values.length; start += width) {
+						const end = Math.min(values.length - 1, start + width - 1);
+						const edges = Array.from({ length: Math.max(0, end - start) }, (_, index) => start + index);
+						if ((start / width) % 2 === 1) edges.reverse();
+						if (await moveAcrossOrder(edges, run)) moved = true;
+					}
+				}
+				if (!moved && !await ensureProgress(run)) return;
+			}
+		}
+
+		async function insertionSort(run: number) {
+			let boundary = 1;
+			while (!sortingComplete() && run === animationRun) {
+				const edges = Array.from({ length: boundary }, (_, index) => boundary - 1 - index);
+				const moved = await moveAcrossOrder(edges, run);
+				boundary = boundary >= values.length - 1 ? 1 : boundary + 1;
+				if (!moved && boundary === 1 && !await ensureProgress(run)) return;
+			}
+		}
+
+		const sortingAlgorithms = [
+			{ name: 'Legacy one-by-one bubble sort', sort: legacyBubbleSort },
+			{ name: 'Cocktail shaker sort', sort: cocktailShakerSort },
+			{ name: 'Odd-even sort', sort: oddEvenSort },
+			{ name: 'Gnome sort', sort: gnomeSort },
+			{ name: 'Comb sort', sort: combSort },
+			{ name: 'Bitonic sort', sort: bitonicSort },
+			{ name: 'Insertion sort', sort: insertionSort },
+		];
+
+		function resize() {
+			// A full-resolution fixed canvas is expensive on high-DPI displays.
+			// 1.5x keeps the grid crisp without doubling or tripling tile memory.
+			pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+			const navbarHeight = document.querySelector<HTMLElement>('.site-header')?.getBoundingClientRect().height ?? 0;
+			topClearance = Math.ceil(navbarHeight + 14);
+			const width = window.innerWidth;
+			const height = window.innerHeight;
+			canvas.width = Math.round(width * pixelRatio);
+			canvas.height = Math.round(height * pixelRatio);
+			const { plotWidth, plotHeight } = getGraphBounds(width, height);
+			const preferredCellSize = 18;
+			rowCount = Math.max(8, Math.floor(plotHeight / preferredCellSize));
+			columnCount = Math.max(8, Math.min(Math.floor(plotWidth / preferredCellSize), rowCount));
+			cellWidth = plotWidth / columnCount;
+			cellHeight = plotHeight / rowCount;
+			activeMove = null;
+			values = createRandomDistribution();
+			initialDisorder = Math.max(1, calculateDisorder(values));
+			draw(reducedMotion.matches ? 1 : 0);
+			debug('grid resized and regenerated', {
+				cssWidth: width,
+				cssHeight: height,
+				bitmapWidth: canvas.width,
+				bitmapHeight: canvas.height,
+				pixelRatio,
+				columnCount,
+				rowCount,
+				cellWidth: Number(cellWidth.toFixed(2)),
+				cellHeight: Number(cellHeight.toFixed(2)),
+				topClearance,
+				initialDisorder,
+			});
+		}
+
+		async function animate(run: number) {
+			debug('animation run started', { run, reducedMotion: reducedMotion.matches });
+			cancelAnimationFrame(animationFrame);
+			if (reducedMotion.matches) {
+				values = Array.from({ length: columnCount }, (_, index) => index + 1);
+				draw();
+				debug('reduced-motion staircase drawn', { run });
+				return;
+			}
+
+			canvas.dataset.sortStatus = 'filling';
+			debug('fill phase started', { run });
+			const fillSteps = 25;
+			for (let step = 0; step <= fillSteps; step += 1) {
+				if (run !== animationRun) return;
+				await waitUntilActive();
+				draw(step / fillSteps);
+				await pauseAwareWait(35);
+			}
+			debug('fill phase completed', { run });
+			await pauseAwareWait(450);
+			if (run !== animationRun) return;
+
+
+			rebuildEdgeSurplus();
+			const selectedAlgorithm = sortingAlgorithms[Math.floor(random() * sortingAlgorithms.length)];
+			movementCount = 0;
+			canvas.dataset.sortAlgorithm = selectedAlgorithm.name;
+			canvas.dataset.sortMoves = '0';
+			canvas.dataset.sortStatus = 'sorting';
+			debug('sorting phase started', {
+				run,
+				algorithm: selectedAlgorithm.name,
+				requiredTransfers: edgeSurplus.reduce((total, surplus) => total + Math.max(0, surplus), 0),
+				minimumStack: Math.min(...values),
+				maximumStack: Math.max(...values),
+				rowCount,
+			});
+			await selectedAlgorithm.sort(run);
+			if (run !== animationRun) return;
+			canvas.dataset.sortStatus = 'complete';
+			debug('sorting phase completed', {
+				run,
+				algorithm: selectedAlgorithm.name,
+				movementCount,
+				finalValuesMatchTarget: values.every((value, index) => value === index + 1),
+			});
+
+			await pauseAwareWait(2200);
+			if (run !== animationRun) return;
+			activeMove = null;
+			values = createRandomDistribution();
+			initialDisorder = Math.max(1, calculateDisorder(values));
+			animationFrame = window.requestAnimationFrame(() => void animate(run));
+		}
+
+		function restartAnimation() {
+			animationRun += 1;
+			const run = animationRun;
+			debug('animation restart requested', { run });
+			void animate(run).catch((error) => {
+				canvas.dataset.sortStatus = 'error';
+				console.error('[SortingBackground] Animation run failed.', { run, error });
+			});
+		}
+
+		resize();
+		restartAnimation();
+		const updatePageActivity = (requestedActive: boolean) => {
+			const nextActive = requestedActive && document.visibilityState === 'visible';
+			if (nextActive === pageIsActive) return;
+
+			pageIsActive = nextActive;
+			debug(pageIsActive ? 'animation resumed' : 'animation paused', {
+				visibilityState: document.visibilityState,
+				pendingWaiters: activeWaiters.length,
+			});
+			if (pageIsActive) {
+				if (resizePending) {
+					resizePending = false;
+					resize();
+					restartAnimation();
+				}
+				activeWaiters.forEach((resolve) => resolve());
+				activeWaiters = [];
+			}
+		};
+		document.addEventListener('visibilitychange', () => {
+			updatePageActivity(document.visibilityState === 'visible');
+		});
+		window.addEventListener('focus', () => updatePageActivity(true));
+		window.addEventListener('blur', () => updatePageActivity(false));
+		// Embedded previews do not always return a window focus event after a
+		// blur. Direct interaction is an equally strong signal that the page is
+		// active and should resume.
+		window.addEventListener('pointerenter', () => updatePageActivity(true), { passive: true });
+		window.addEventListener('pointerdown', () => updatePageActivity(true), { passive: true });
+		window.addEventListener('keydown', () => updatePageActivity(true));
+		window.addEventListener('resize', () => {
+			window.clearTimeout(resizeTimer);
+			resizeTimer = window.setTimeout(() => {
+				if (!pageIsActive) {
+					resizePending = true;
+					return;
+				}
+				resize();
+				restartAnimation();
+			}, 140);
+		});
+		reducedMotion.addEventListener('change', () => {
+			debug('reduced-motion preference changed', { matches: reducedMotion.matches });
+			resize();
+			restartAnimation();
+		});
+		updatePageActivity(document.visibilityState === 'visible');
+	} else {
+		console.error('[SortingBackground] Canvas element was not found; background animation cannot start.');
+	}
+</script>

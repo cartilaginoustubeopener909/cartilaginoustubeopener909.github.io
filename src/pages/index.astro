@@ -1,0 +1,380 @@
+---
+import SortingBackground from '../components/SortingBackground.astro';
+
+const builtAt = new Date();
+const builtAtLabel = new Intl.DateTimeFormat('en-GB', {
+	day: '2-digit',
+	month: 'short',
+	year: 'numeric',
+	hour: '2-digit',
+	minute: '2-digit',
+	hour12: false,
+	timeZone: 'UTC',
+}).format(builtAt);
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="stylesheet" href="./styles.css" />
+		<title>Portfolio</title>
+	</head>
+	<body>
+		<SortingBackground />
+		<header class="site-header">
+			<nav class="site-nav" aria-label="Main navigation">
+				<p class="site-build-time" title="Generated when this version of the portfolio was built">
+					<span class="site-build-time__signal" aria-hidden="true"></span>
+					<span>Last updated</span>
+					<time datetime={builtAt.toISOString()}>{builtAtLabel} UTC</time>
+				</p>
+				<div class="site-nav__links">
+					<a href="/">Home</a>
+					<a href="#projects">Projects</a>
+					<a href="#experience">Experience</a>
+					<a href="#contact">Contact</a>
+				</div>
+				<a class="astro-badge" href="https://astro.build/" target="_blank" rel="noreferrer" aria-label="Built with Astro — visit astro.build">
+					<svg viewBox="0 0 32 32" aria-hidden="true">
+						<path class="astro-badge__body" d="M10.25 20.4 13.8 7.7c.25-.9.82-1.35 1.7-1.35h1c.88 0 1.45.45 1.7 1.35l3.55 12.7-3.2-1.85-1.35-4.6h-2.4l-1.35 4.6-3.2 1.85Z"/>
+						<path class="astro-badge__flare" d="M8.6 19.45c1.55 1.2 3.35 2.05 5.3 2.5-.92.66-1.55 1.68-1.72 2.82-.08.5-.05 1 .08 1.48-1.88-1.08-3.23-2.9-3.66-5.02-.12-.6-.12-1.2 0-1.78Zm14.8 0c.12.58.12 1.18 0 1.78-.43 2.12-1.78 3.94-3.66 5.02.13-.48.16-.98.08-1.48-.17-1.14-.8-2.16-1.72-2.82 1.95-.45 3.75-1.3 5.3-2.5Z"/>
+					</svg>
+					<span>Built with <strong>Astro</strong></span>
+				</a>
+			</nav>
+		</header>
+
+		<main>
+			<section id="hero" aria-labelledby="hero-title">
+				<article class="hero-card">
+					<header>
+						<h1 id="hero-title">Vedran Ilievski</h1>
+						<p class="hero-title">Software Engineer</p>
+					</header>
+					<section>
+						<p>Building high-performance desktop applications, scalable backend services, and modern web platforms with a passion for efficient system design and hardware-aware optimization.</p>
+					</section>
+					<section class="hero-highlights" aria-label="Career highlights">
+						<article class="highlight-card highlight-card--location">
+							<span class="highlight-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+							<div class="highlight-content"><p class="highlight-label">Location</p><p class="highlight-value">Macedonia</p><p class="highlight-detail">Based in the Balkans</p></div>
+						</article>
+						<article class="highlight-card highlight-card--experience">
+							<span class="highlight-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5M4 19h16"/><path d="m7 15 4-4 3 2 5-6"/><path d="M16 7h3v3"/></svg></span>
+							<div class="highlight-content"><p class="highlight-label">Experience</p><p class="highlight-value">4+ years</p><p class="highlight-detail">Professional engineering</p></div>
+						</article>
+					</section>
+
+					<section class="hero-about" aria-labelledby="hero-about-title">
+						<h2 id="hero-about-title" class="section-heading"><span class="section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="m12 3 1.5 3M21 12l-3 1.5M12 21l-1.5-3M3 12l3-1.5"/></svg></span>Goal</h2>
+						<p>Design software that pushes hardware to its full potential without sacrificing usability or maintainability. I enjoy solving complex engineering challenges, learning new technologies, and building applications that are both technically robust and practical for real-world use.</p>
+					</section>
+
+					<section class="hero-skills" aria-labelledby="hero-skills-title">
+						<dl class="skill-fields">
+							<div class="skill-group skill-group--languages">
+								<dt><span class="skill-label-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m8 9-3 3 3 3M16 9l3 3-3 3M14 5l-4 14"/></svg></span>Programming languages</dt>
+								<dd><ul class="skill-pills"><li>C#</li><li>TypeScript</li><li>JavaScript</li><li>Python</li><li>SQL</li><li>Rust</li><li>Java</li></ul></dd>
+							</div>
+							<div class="skill-group skill-group--frameworks">
+								<dt><span class="skill-label-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 8 4.5-8 4.5-8-4.5L12 3Z"/><path d="m4 12 8 4.5 8-4.5M4 16.5 12 21l8-4.5"/></svg></span>Frameworks</dt>
+								<dd><ul class="skill-pills"><li>ASP.NET Core</li><li>Entity Framework Core</li><li>Angular</li><li>React</li><li>Avalonia UI</li><li>Django</li><li>Express.js</li><li>Node.js</li></ul></dd>
+							</div>
+							<div class="skill-group skill-group--machine-learning">
+								<dt><span class="skill-label-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M9 1v3m6-3v3M9 20v3m6-3v3M1 9h3m-3 6h3m16-6h3m-3 6h3M10 10h4v4h-4z"/></svg></span>Machine learning &amp; high-performance computing</dt>
+								<dd><ul class="skill-pills"><li>PyTorch</li><li>U-Net</li><li>ROCm/HIP</li><li>CUDA</li><li>Vulkan</li></ul></dd>
+							</div>
+						</dl>
+					</section>
+
+					<section class="hero-signals" aria-label="Professional highlights">
+						<article class="signal-card signal-card--one"><p class="signal-label">Total projects</p><p class="signal-value">11</p></article>
+						<article class="signal-card signal-card--two"><p class="signal-label">Currently working on</p><p class="signal-value" style="font-size: 16px;">Sezakompjuteri<br />Gluj-Lens <br />  DalMax Frigo</p> <br /></article>
+						<article class="signal-card signal-card--three"><p class="signal-label">Current position</p><p class="signal-value" style="font-size: 16px;">Co-Founder of Sezakompjuteri &amp; Lead Software Engineer</p></article>
+					</section>
+				</article>
+			</section>
+
+			<div class="content-sections">
+				<div class="timeline-sections">
+				<span class="timeline-spine" aria-hidden="true">
+					<span class="timeline-spine__fill"></span>
+					<span class="timeline-spine__origin"></span>
+				</span>
+				<section id="experience" class="content-section experience-section" aria-labelledby="experience-title">
+					<header class="content-heading"><h2 id="experience-title">Work experience</h2></header>
+					<div class="experience-timeline">
+						<article class="experience-entry">
+							<p class="entry-meta">Sezakompjuteri · 2022 - Present</p>
+							<h3>Lead Software Engineer - Owner</h3>
+							<p>Lead engineer responsible for the technical vision, architecture, and long-term development of Sezakompjuteri, a computer hardware marketplace platform. Led every stage of the software lifecycle, from initial planning and technology selection to deployment, infrastructure, and ongoing maintenance.</p>
+							<ul class="responsibility-list">
+							    <li><span class="responsibility-icon" aria-hidden="true"></span><span>Selected the technology stack, frameworks, development tools, and architectural patterns to ensure scalability, maintainability, and long-term growth.</span></li>
+							    <li><span class="responsibility-icon" aria-hidden="true"></span><span>Designed and implemented the entire application from the ground up, including backend services, frontend, database, authentication, security, and supporting systems.</span></li>
+							    <li><span class="responsibility-icon" aria-hidden="true"></span><span>Directed feature planning, performance optimization, system scalability, and overall product scope throughout the project's lifecycle.</span></li>
+							    <li><span class="responsibility-icon" aria-hidden="true"></span><span>Owned deployment, hosting, CI/CD automation, server administration, and operational maintenance to ensure reliable production releases.</span></li>
+							</ul>
+
+							<div class="skill-group skill-group--languages">
+								<dd><ul class="skill-pills"><li>C#</li><li>TypeScript</li><li>Python</li><li>ASP.NET Core</li><li>Angular</li><li>Entity Framework Core</li><li>MSSQL</li><li>Git</li></ul></dd>
+							</div>
+						</article>
+
+						<article class="experience-entry">
+							<p class="entry-meta">DalMax Frigo · 2025 - Present</p>
+							<h3>Lead Software Engineer - Contract</h3>
+							<p>Collaborating directly with company leadership to redesign and modernize the organization's online presence through an interactive, high-performance website that showcases construction projects using real-time 3D visualization.</p>
+							<ul class="responsibility-list">
+							    <li><span class="responsibility-icon" aria-hidden="true"></span><span>Designing and developing a modern landing page with interactive 3D experiences to better showcase the company's services and completed projects.</span></li>
+							    <li><span class="responsibility-icon" aria-hidden="true"></span><span>Implementing a Three.js-based 3D viewer capable of visualizing construction projects through segmented build phases and interactive scene controls.</span></li>
+							    <li><span class="responsibility-icon" aria-hidden="true"></span><span>Optimizing rendering performance and responsiveness to ensure a smooth experience across desktop and mobile devices.</span></li>
+							</ul>
+							<div class="skill-group skill-group--languages">
+								<dd><ul class="skill-pills"><li>Html</li><li>CSS</li><li>JavaScript</li><li>Express.js</li><li>Three.js</li></ul></dd>
+							</div>
+						</article>
+					</div>
+				</section>
+				<section id="projects" class="content-section projects-section" aria-labelledby="projects-title">
+					<header class="content-heading"><h2 id="projects-title">Projects in Active <br> Development</h2></header>
+					<div class="project-timeline">
+						<article class="project-template project-template--private">
+							<div>
+								<div class="project-meta" aria-label="Project status">
+									<span class="project-meta__category">Full End-to-End OCR Pipeline for Desktop</span>
+									<span class="project-meta__status">Active development</span>
+									<span class="project-meta__release">No public release yet</span>
+								</div>
+								<h3>GlujLens</h3>
+								<p>GlujLens is a high-performance Multi-Platform OCR platform built around a custom multi-model AI pipeline. By combining lightweight vision models with configurable OCR and translation providers, it delivers accurate text detection, recognition, and translation while utilizing CPU, GPU, or NPU acceleration through ROCm, CUDA, and Vulkan for efficient inference across a wide range of hardware.</p>
+							</div>
+							<ul class="project-tags"> 
+								<li>C#</li>
+								<li>Python</li>  
+								<li>.NET 9</li>
+							    <li>Avalonia UI</li>
+							    <li>U-Net</li>
+							    <li>PyTorch</li>
+							    <li>CUDA</li>
+							    <li>ROCm</li>
+							    <li>Vulkan</li>
+								<li>Multi-Platform</li>
+							</ul>
+							<div class="project-access-state">
+								<span class="project-access-state__icon" aria-hidden="true">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v2"/></svg>
+								</span>
+								<span><strong>Proprietary project</strong><small>Source code, models, and development builds are private.</small></span>
+							</div>
+						</article>
+						<article class="project-template project-template--public">
+							<div>
+								<div class="project-meta" aria-label="Project status">
+									<span class="project-meta__category">Vendor-neutral hardware benchmark for Windows</span>
+									<span class="project-meta__version">Beta · Version 0.1.0</span>
+									<span class="project-meta__release project-meta__release--public">Public release</span>
+								</div>
+								<h3>Gluj-Bench</h3>
+								<p>Gluj-Bench is a free, vendor-neutral hardware benchmarking suite built in Rust to evaluate modern desktop systems. It measures CPU and GPU compute performance alongside cache, RAM, VRAM, and host-to-GPU bandwidth using transparent, reproducible workloads.</p>
+							</div>
+							<ul class="project-tags"><li>Rust</li><li>eframe/egui</li><li>wgpu</li><li>WGSL</li><li>Windows x64</li><li>MIT</li></ul>
+							<div class="project-actions" aria-label="Gluj-Bench links">
+								<a class="project-action project-action--source" href="https://github.com/githubdood21/Gluj-Bench" target="_blank" rel="noopener noreferrer">
+									<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-3M14 3h7v7M10 14 21 3"/></svg>
+									<span>View source</span>
+								</a>
+								<a class="project-action project-action--release" href="https://github.com/githubdood21/Gluj-Bench/releases" target="_blank" rel="noopener noreferrer">
+									<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg>
+									<span>Get releases</span>
+								</a>
+							</div>
+						</article>
+						<article class="project-template project-template--public project-template--drive">
+							<div>
+								<div class="project-meta" aria-label="Project status">
+									<span class="project-meta__category">Windows-native private media server</span>
+									<span class="project-meta__version">Beta · Version 0.1.0</span>
+									<span class="project-meta__release project-meta__release--public">Public release</span>
+								</div>
+								<h3>Gluj-Drive</h3>
+								<p>Gluj-Drive turns a Windows PC into a private photo and video library for LAN or Tailscale access. It indexes media in existing folders without reorganizing the originals, provides responsive desktop and mobile galleries, streams video, supports uploads, and offers optional fully local semantic search.</p>
+							</div>
+							<ul class="project-tags"><li>C#</li><li>ASP.NET Core</li><li>React</li><li>TypeScript</li><li>TinyCLIP</li><li>Windows x64</li><li>Apache 2.0</li></ul>
+							<div class="project-actions" aria-label="Gluj-Drive links">
+								<a class="project-action project-action--source" href="https://github.com/githubdood21/Gluj-Drive" target="_blank" rel="noopener noreferrer">
+									<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-3M14 3h7v7M10 14 21 3"/></svg>
+									<span>View source</span>
+								</a>
+								<a class="project-action project-action--release" href="https://github.com/githubdood21/Gluj-Drive/releases" target="_blank" rel="noopener noreferrer">
+									<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg>
+									<span>Get releases</span>
+								</a>
+							</div>
+						</article>
+					</div>
+				</section>
+				</div>
+
+					<section class="project-archive" aria-labelledby="project-archive-title">
+						<header class="project-archive__heading">
+							<span class="project-archive__terminal" aria-hidden="true"></span>
+							<p>Archive / resolved threads</p>
+							<h3 id="project-archive-title">Past project matrix</h3>
+							<p>Finished work, paused explorations, and projects retired along the way.</p>
+						</header>
+						<div class="project-archive__grid">
+							<article class="archive-project archive-project--finished">
+								<div class="archive-project__meta"><span class="archive-project__status">Finished</span><span>Vision-Capable AI Assistant</span></div>
+								<h4>AI-Backseater</h4>
+								<p>A Windows desktop companion that captures a selected screen region and sends it, together with a custom persona and instruction prompt, to an OpenAI-compatible vision endpoint. Depending on the prompt, it can provide gaming commentary, video analysis, or guided instruction.</p>
+								<p class="archive-project__outcome">The finished application combines local Kokoro text-to-speech, rolling conversation context, alert conditions, and searchable SQLite history in one configurable assistant. Hardware requirements depend on the selected vision model, with larger local models requiring significantly more VRAM.</p>
+								<ul class="archive-project__tags"><li>Python</li><li>PyQt5</li><li>Vision LLM</li><li>OpenAI API</li><li>Kokoro TTS</li><li>SQLite</li></ul>
+								<a class="archive-project__link" href="https://github.com/githubdood21/AI-Backseater" target="_blank" rel="noopener noreferrer">View repository <span aria-hidden="true">↗</span></a>
+							</article>
+							<article class="archive-project archive-project--paused">
+								<div class="archive-project__meta"><span class="archive-project__status">Paused</span><span>Interactive Map Generator</span></div>
+								<h4>GujGen</h4>
+								<p>An experimental desktop toolkit for generating and editing fantasy worlds. It combines seeded, grid-based terrain generation with visual markers for shaping landmasses, biomes, mountain ranges, rivers, and other world features.</p>
+								<p class="archive-project__outcome">Development was paused as the project’s scope and architectural complexity grew, while primary development focus shifted to GlujLens.</p>
+								<ul class="archive-project__tags"><li>C#</li><li>.NET 9</li><li>Avalonia</li><li>MVVM</li><li>Perlin Noise</li><li>JSON</li></ul>
+								<a class="archive-project__link" href="https://github.com/githubdood21/GujGen" target="_blank" rel="noopener noreferrer">View repository <span aria-hidden="true">↗</span></a>
+							</article>
+							<article class="archive-project archive-project--cancelled">
+								<div class="archive-project__meta"><span class="archive-project__status">Cancelled</span><span>Hardware Price Aggregator</span></div>
+								<h4>BitCeni</h4>
+								<p>A full-stack hardware price aggregation prototype built around a Django REST API, an Angular frontend, and a Selenium scraper. It was intended to normalize listings from multiple retailers so users could compare the best available purchasing options.</p>
+								<p class="archive-project__outcome">Frequent retailer-page changes required continuous scraper maintenance and made reliable price aggregation too unreliable to continue.</p>
+								<ul class="archive-project__tags"><li>Python</li><li>Django REST</li><li>Angular</li><li>TypeScript</li><li>Selenium</li></ul>
+								<a class="archive-project__link" href="https://github.com/githubdood21/BitCeni" target="_blank" rel="noopener noreferrer">View repository <span aria-hidden="true">↗</span></a>
+							</article>
+							<article class="archive-project archive-project--finished">
+								<div class="archive-project__meta"><span class="archive-project__status">Finished</span><span>Proof of Concept</span></div>
+								<h4>Service-Status-Dashboard</h4>
+								<p>A compact service-monitoring dashboard built with Node.js and Express. It tracks HTTP service availability and response times through a REST API, an EJS web interface, and SQLite persistence through Sequelize.</p>
+								<p class="archive-project__outcome">The completed proof of concept demonstrates a full CI/CD workflow: GitHub Actions runs unit and integration tests, verifies the application inside Docker, builds a production image, and publishes it to Docker Hub.</p>
+								<ul class="archive-project__tags"><li>Node.js</li><li>Express</li><li>SQLite</li><li>Sequelize</li><li>Docker</li><li>GitHub Actions</li><li>Jest</li></ul>
+								<a class="archive-project__link" href="https://github.com/githubdood21/Service-Status-Dashboard" target="_blank" rel="noopener noreferrer">View repository <span aria-hidden="true">↗</span></a>
+							</article>
+							<article class="archive-project archive-project--paused">
+								<div class="archive-project__meta"><span class="archive-project__status">Paused</span><span>Roguelike Game</span></div>
+								<h4>Cave-Game</h4>
+								<p>My role was to design a scalable, data-driven foundation that made content creation and ongoing development easier for the team, using Godot and C# as the technical base.</p>
+								<p class="archive-project__outcome">Development is paused while the team waits for additional game assets.</p>
+								<ul class="archive-project__tags"><li>Godot</li><li>C#</li><li>Data-Driven Design</li><li>Game Development</li></ul>
+								<p class="archive-project__access"><span aria-hidden="true">●</span> Private repository</p>
+							</article>
+						</div>
+					</section>
+
+				<section id="contact" class="content-section contact-section" aria-labelledby="contact-title">
+					<header class="content-heading">
+						<p>03 / Contact</p>
+						<h2 id="contact-title">Let’s start a conversation.</h2>
+					</header>
+					<p>Choose whichever channel works best for you. I’m always happy to discuss software, projects, and new opportunities.</p>
+					<address class="contact-methods">
+						<a class="contact-method contact-method--email" href="mailto:ilievskivedran@yahoo.com">
+							<span class="contact-method__icon" aria-hidden="true">
+								<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>
+							</span>
+							<span class="contact-method__copy"><small>Email</small><strong>ilievskivedran@yahoo.com</strong></span>
+							<span class="contact-method__arrow" aria-hidden="true">↗</span>
+						</a>
+						<a class="contact-method contact-method--phone" href="tel:+38978841575">
+							<span class="contact-method__icon" aria-hidden="true">
+								<svg viewBox="0 0 24 24"><path d="M7.2 3.5 10 7.2 8.3 9.5a14.5 14.5 0 0 0 6.2 6.2l2.3-1.7 3.7 2.8v2.7c0 .8-.7 1.5-1.5 1.5C10.2 21 3 13.8 3 5c0-.8.7-1.5 1.5-1.5h2.7Z"/></svg>
+							</span>
+							<span class="contact-method__copy"><small>Phone</small><strong>+389 078 841 575</strong></span>
+							<span class="contact-method__arrow" aria-hidden="true">↗</span>
+						</a>
+						<a class="contact-method contact-method--github" href="https://github.com/githubdood21" target="_blank" rel="me noopener noreferrer">
+							<span class="contact-method__icon" aria-hidden="true">
+								<svg viewBox="0 0 24 24"><path d="M9 19c-4.5 1.4-4.5-2.5-6-3m12 5v-3.5c0-1 .1-1.5-.5-2.1 2.8-.3 5.7-1.4 5.7-6.2A4.8 4.8 0 0 0 19 5.9 4.5 4.5 0 0 0 18.9 3S17.8 2.7 15 4.2a11 11 0 0 0-6 0C6.2 2.7 5.1 3 5.1 3A4.5 4.5 0 0 0 5 5.9a4.8 4.8 0 0 0-1.2 3.3c0 4.8 2.9 5.9 5.7 6.2-.6.6-.6 1.2-.5 2.1V21"/></svg>
+							</span>
+							<span class="contact-method__copy"><small>GitHub</small><strong>githubdood21</strong></span>
+							<span class="contact-method__arrow" aria-hidden="true">↗</span>
+						</a>
+						<a class="contact-method contact-method--linkedin" href="https://www.linkedin.com/in/vedran-ilievski/" target="_blank" rel="me noopener noreferrer">
+							<span class="contact-method__icon" aria-hidden="true">
+								<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 10v7m0-10v.01M12 17v-4a3 3 0 0 1 6 0v4m-6 0v-7"/></svg>
+							</span>
+							<span class="contact-method__copy"><small>LinkedIn</small><strong>vedran-ilievski</strong></span>
+							<span class="contact-method__arrow" aria-hidden="true">↗</span>
+						</a>
+					</address>
+				</section>
+			</div>
+		</main>
+
+		<footer>
+			<p>© Your Name</p>
+		</footer>
+		<script>
+			const timeline = document.querySelector<HTMLElement>('.timeline-sections');
+
+			if (timeline) {
+				const spine = timeline.querySelector<HTMLElement>('.timeline-spine');
+				const entries = Array.from(
+					timeline.querySelectorAll<HTMLElement>('.experience-entry, .project-template'),
+				);
+				const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+				let scrollFrame = 0;
+
+				const revealCompleteTimeline = () => {
+					timeline.classList.remove('timeline-animated');
+					timeline.style.removeProperty('--spine-fill');
+					entries.forEach((entry) => entry.classList.add('timeline-entry--reached'));
+				};
+
+				const updateTimeline = () => {
+					scrollFrame = 0;
+					if (!spine || reducedMotion.matches) {
+						revealCompleteTimeline();
+						return;
+					}
+
+					const timelineRect = timeline.getBoundingClientRect();
+					const spineRect = spine.getBoundingClientRect();
+					const spineStart = spineRect.top - timelineRect.top;
+					const guidePosition = window.innerHeight * 0.72;
+					const fillHeight = Math.min(
+						spine.offsetHeight,
+						Math.max(0, guidePosition - spineRect.top),
+					);
+
+					timeline.style.setProperty('--spine-fill', `${fillHeight}px`);
+
+					entries.forEach((entry) => {
+						const entryRect = entry.getBoundingClientRect();
+						const branchPoint = entryRect.top - timelineRect.top + entryRect.height / 2 - spineStart;
+						entry.classList.toggle('timeline-entry--reached', fillHeight >= branchPoint);
+					});
+				};
+
+				const requestTimelineUpdate = () => {
+					if (scrollFrame) return;
+					scrollFrame = window.requestAnimationFrame(updateTimeline);
+				};
+
+				const initializeTimeline = () => {
+					if (reducedMotion.matches) {
+						revealCompleteTimeline();
+						return;
+					}
+
+					timeline.classList.add('timeline-animated');
+					entries.forEach((entry) => entry.classList.remove('timeline-entry--reached'));
+					updateTimeline();
+				};
+
+				window.addEventListener('scroll', requestTimelineUpdate, { passive: true });
+				window.addEventListener('resize', requestTimelineUpdate);
+				reducedMotion.addEventListener('change', initializeTimeline);
+				new ResizeObserver(requestTimelineUpdate).observe(timeline);
+				initializeTimeline();
+			}
+		</script>
+	</body>
+</html>
