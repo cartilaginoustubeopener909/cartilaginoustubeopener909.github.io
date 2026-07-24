@@ -1,5 +1,8 @@
 ---
 import { projects } from '../../data/projects';
+
+const baseUrl = `${import.meta.env.BASE_URL.replace(/\/+$/, '')}/`;
+const withBase = (path = '') => `${baseUrl}${path.replace(/^\/+/, '')}`;
 ---
 
 <!doctype html>
@@ -7,16 +10,16 @@ import { projects } from '../../data/projects';
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" type="image/svg+xml" href={withBase('favicon.svg')} />
 		<title>Projects | Vedran Ilievski</title>
 	</head>
 	<body>
-		<header><nav aria-label="Main navigation"><a href="/">Home</a><a href="/projects">Projects</a></nav></header>
+		<header><nav aria-label="Main navigation"><a href={withBase()}>Home</a><a href={withBase('projects/')}>Projects</a></nav></header>
 		<main>
 			<h1>Projects</h1>
 			<ul>
 				{projects.map((project) => (
-					<li><article><h2><a href={`/projects/${project.slug}`}>{project.title}</a></h2><p>{project.summary}</p></article></li>
+					<li><article><h2><a href={withBase(`projects/${project.slug}/`)}>{project.title}</a></h2><p>{project.summary}</p></article></li>
 				))}
 			</ul>
 		</main>

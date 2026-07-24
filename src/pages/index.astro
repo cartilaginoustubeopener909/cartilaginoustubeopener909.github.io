@@ -1,6 +1,8 @@
 ---
 import SortingBackground from '../components/SortingBackground.astro';
 
+const baseUrl = `${import.meta.env.BASE_URL.replace(/\/+$/, '')}/`;
+const withBase = (path = '') => `${baseUrl}${path.replace(/^\/+/, '')}`;
 const builtAt = new Date();
 const builtAtLabel = new Intl.DateTimeFormat('en-GB', {
 	day: '2-digit',
@@ -18,8 +20,8 @@ const builtAtLabel = new Intl.DateTimeFormat('en-GB', {
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="stylesheet" href="./styles.css" />
-		<link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+		<link rel="stylesheet" href={withBase('styles.css')} />
+		<link rel="icon" type="image/svg+xml" href={withBase('favicon.svg')} />
 		<title>Vedran Ilievski | Software Engineer</title>
 	</head>
 	<body>
@@ -32,7 +34,7 @@ const builtAtLabel = new Intl.DateTimeFormat('en-GB', {
 					<time datetime={builtAt.toISOString()}>{builtAtLabel} UTC</time>
 				</p>
 				<div class="site-nav__links">
-					<a href="/">Home</a>
+					<a href={withBase()}>Home</a>
 					<a href="#projects">Projects</a>
 					<a href="#experience">Experience</a>
 					<a href="#contact">Contact</a>

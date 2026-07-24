@@ -6,6 +6,8 @@ export function getStaticPaths() {
 }
 
 const { project } = Astro.props;
+const baseUrl = `${import.meta.env.BASE_URL.replace(/\/+$/, '')}/`;
+const withBase = (path = '') => `${baseUrl}${path.replace(/^\/+/, '')}`;
 ---
 
 <!doctype html>
@@ -13,11 +15,11 @@ const { project } = Astro.props;
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" type="image/svg+xml" href={withBase('favicon.svg')} />
 		<title>{project.title} | Vedran Ilievski</title>
 	</head>
 	<body>
-		<header><nav aria-label="Main navigation"><a href="/">Home</a><a href="/projects">Projects</a></nav></header>
+		<header><nav aria-label="Main navigation"><a href={withBase()}>Home</a><a href={withBase('projects/')}>Projects</a></nav></header>
 		<main>
 			<article>
 				<header><p>Project</p><h1>{project.title}</h1><p>{project.summary}</p></header>
@@ -28,7 +30,7 @@ const { project } = Astro.props;
 				<section aria-labelledby="outcome-title"><h2 id="outcome-title">Outcome</h2><p>Results and learnings to be added.</p></section>
 				<section aria-labelledby="technology-title"><h2 id="technology-title">Technology</h2><ul><li>Technologies to be added.</li></ul></section>
 			</article>
-			<p><a href="/projects">Back to projects</a></p>
+			<p><a href={withBase('projects/')}>Back to projects</a></p>
 		</main>
 		<footer><p>© Your Name</p></footer>
 	</body>
