@@ -24,6 +24,6 @@ pnpm-debug.log*
 .idea/
 
 # Not needed
-AGENTS.md
-CLAUDE.md
+*.md
+!README.md
 .agents

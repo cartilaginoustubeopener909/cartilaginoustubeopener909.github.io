@@ -18,6 +18,8 @@
 </style>
 
 <script>
+	declare const __BUILD_VERSION__: string;
+
 	const canvas = document.querySelector<HTMLCanvasElement>('.sorting-background');
 
 	if (canvas) {
@@ -50,6 +52,8 @@
 		let resizePending = false;
 		let initialDisorder = 1;
 		let colorPhase = 0;
+		let destroyed = false;
+		const pendingTimers = new Map<number, () => void>();
 		// A visible page starts active. Some embedded previews report
 		// document.hasFocus() as false permanently, which would otherwise freeze
 		// the initial empty frame before the cube fill can begin.
@@ -57,17 +61,30 @@
 		let activeWaiters: Array<() => void> = [];
 
 		debug('script initialized', {
+			version: __BUILD_VERSION__,
 			canvasFound: true,
 			contextCreated: Boolean(context),
 			visibilityState: document.visibilityState,
 			initiallyActive: pageIsActive,
 			devicePixelRatio: window.devicePixelRatio,
 		});
+		canvas.dataset.scriptVersion = __BUILD_VERSION__;
 		if (!context) console.error('[SortingBackground] Unable to create the 2D canvas context.');
 
-		const wait = (milliseconds: number) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+		const wait = (milliseconds: number) => new Promise<void>((resolve) => {
+			if (destroyed) {
+				resolve();
+				return;
+			}
+
+			const timer = window.setTimeout(() => {
+				pendingTimers.delete(timer);
+				resolve();
+			}, milliseconds);
+			pendingTimers.set(timer, resolve);
+		});
 		const waitUntilActive = () => {
-			if (pageIsActive) return Promise.resolve();
+			if (pageIsActive || destroyed) return Promise.resolve();
 			return new Promise<void>((resolve) => activeWaiters.push(resolve));
 		};
 		const pauseAwareWait = async (milliseconds: number) => {
@@ -125,7 +142,7 @@
 		};
 
 		function draw(fillProgress = 1) {
-			if (!context) return;
+			if (!context || destroyed) return;
 
 			const width = canvas.width / pixelRatio;
 			const height = canvas.height / pixelRatio;
@@ -280,6 +297,8 @@
 		const moveCube = async (edge: number, run: number) => {
 			const maximumStackHeight = rowCount;
 			if (
+				destroyed
+				||
 				run !== animationRun
 				|| edge < 0
 				|| edge >= values.length - 1
@@ -458,6 +477,7 @@
 		];
 
 		function resize() {
+			if (destroyed) return;
 			// A full-resolution fixed canvas is expensive on high-DPI displays.
 			// 1.5x keeps the grid crisp without doubling or tripling tile memory.
 			pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
@@ -493,6 +513,7 @@
 		}
 
 		async function animate(run: number) {
+			if (destroyed) return;
 			debug('animation run started', { run, reducedMotion: reducedMotion.matches });
 			cancelAnimationFrame(animationFrame);
 			if (reducedMotion.matches) {
@@ -549,6 +570,7 @@
 		}
 
 		function restartAnimation() {
+			if (destroyed) return;
 			animationRun += 1;
 			const run = animationRun;
 			debug('animation restart requested', { run });
@@ -561,6 +583,7 @@
 		resize();
 		restartAnimation();
 		const updatePageActivity = (requestedActive: boolean) => {
+			if (destroyed) return;
 			const nextActive = requestedActive && document.visibilityState === 'visible';
 			if (nextActive === pageIsActive) return;
 
@@ -579,18 +602,13 @@
 				activeWaiters = [];
 			}
 		};
-		document.addEventListener('visibilitychange', () => {
+		const handleVisibilityChange = () => {
 			updatePageActivity(document.visibilityState === 'visible');
-		});
-		window.addEventListener('focus', () => updatePageActivity(true));
-		window.addEventListener('blur', () => updatePageActivity(false));
-		// Embedded previews do not always return a window focus event after a
-		// blur. Direct interaction is an equally strong signal that the page is
-		// active and should resume.
-		window.addEventListener('pointerenter', () => updatePageActivity(true), { passive: true });
-		window.addEventListener('pointerdown', () => updatePageActivity(true), { passive: true });
-		window.addEventListener('keydown', () => updatePageActivity(true));
-		window.addEventListener('resize', () => {
+		};
+		const handleFocus = () => updatePageActivity(true);
+		const handleBlur = () => updatePageActivity(false);
+		const handleInteraction = () => updatePageActivity(true);
+		const handleResize = () => {
 			window.clearTimeout(resizeTimer);
 			resizeTimer = window.setTimeout(() => {
 				if (!pageIsActive) {
@@ -600,12 +618,73 @@
 				resize();
 				restartAnimation();
 			}, 140);
-		});
-		reducedMotion.addEventListener('change', () => {
+		};
+		const handleReducedMotionChange = () => {
 			debug('reduced-motion preference changed', { matches: reducedMotion.matches });
 			resize();
 			restartAnimation();
-		});
+		};
+		const destroyAnimation = () => {
+			if (destroyed) return;
+
+			destroyed = true;
+			pageIsActive = false;
+			animationRun += 1;
+			cancelAnimationFrame(animationFrame);
+			window.clearTimeout(resizeTimer);
+			pendingTimers.forEach((resolve, timer) => {
+				window.clearTimeout(timer);
+				resolve();
+			});
+			pendingTimers.clear();
+			activeWaiters.forEach((resolve) => resolve());
+			activeWaiters = [];
+
+			document.removeEventListener('visibilitychange', handleVisibilityChange);
+			window.removeEventListener('focus', handleFocus);
+			window.removeEventListener('blur', handleBlur);
+			window.removeEventListener('pointerenter', handleInteraction);
+			window.removeEventListener('pointerdown', handleInteraction);
+			window.removeEventListener('keydown', handleInteraction);
+			window.removeEventListener('resize', handleResize);
+			window.removeEventListener('pagehide', handlePageHide);
+			window.removeEventListener('pageshow', handlePageShow);
+			reducedMotion.removeEventListener('change', handleReducedMotionChange);
+
+			activeMove = null;
+			values = [];
+			edgeSurplus = [];
+			context?.clearRect(0, 0, canvas.width, canvas.height);
+			// Shrinking the backing store explicitly releases the large canvas
+			// bitmap instead of waiting for a later garbage-collection pass.
+			canvas.width = 1;
+			canvas.height = 1;
+		};
+		const handlePageHide = (event: PageTransitionEvent) => {
+			if (event.persisted) {
+				updatePageActivity(false);
+				cancelAnimationFrame(animationFrame);
+				return;
+			}
+			destroyAnimation();
+		};
+		const handlePageShow = (event: PageTransitionEvent) => {
+			if (event.persisted) updatePageActivity(document.visibilityState === 'visible');
+		};
+
+		document.addEventListener('visibilitychange', handleVisibilityChange);
+		window.addEventListener('focus', handleFocus);
+		window.addEventListener('blur', handleBlur);
+		// Embedded previews do not always return a window focus event after a
+		// blur. Direct interaction is an equally strong signal that the page is
+		// active and should resume.
+		window.addEventListener('pointerenter', handleInteraction, { passive: true });
+		window.addEventListener('pointerdown', handleInteraction, { passive: true });
+		window.addEventListener('keydown', handleInteraction);
+		window.addEventListener('resize', handleResize);
+		window.addEventListener('pagehide', handlePageHide);
+		window.addEventListener('pageshow', handlePageShow);
+		reducedMotion.addEventListener('change', handleReducedMotionChange);
 		updatePageActivity(document.visibilityState === 'visible');
 	} else {
 		console.error('[SortingBackground] Canvas element was not found; background animation cannot start.');
